@@ -1,4 +1,19 @@
-const API_URL = 'http://localhost:3002/api';
+function resolveApiBase(): string {
+  const envUrl = import.meta.env.VITE_API_URL as string | undefined;
+  if (envUrl) return envUrl.replace(/\/$/, '');
+
+  if (typeof window !== 'undefined') {
+    const origin = window.location.origin;
+    if (origin.includes('localhost')) {
+      return 'http://localhost:3002';
+    }
+    return origin;
+  }
+
+  return 'http://localhost:3002';
+}
+
+const API_URL = `${resolveApiBase()}/api`;
 
 async function getAuthHeaders(): Promise<HeadersInit> {
   const token = localStorage.getItem('mizan_token');
