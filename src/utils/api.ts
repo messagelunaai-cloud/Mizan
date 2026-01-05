@@ -1,19 +1,26 @@
-function resolveApiBase(): string {
+const FALLBACK_REMOTE_API = 'https://mizan1.onrender.com';
+
+export function resolveApiBase(): string {
   const envUrl = import.meta.env.VITE_API_URL as string | undefined;
   if (envUrl) return envUrl.replace(/\/$/, '');
 
   if (typeof window !== 'undefined') {
     const origin = window.location.origin;
+
+    // If running on localhost without a local API, default to the deployed API to avoid 500s.
     if (origin.includes('localhost')) {
-      return 'http://localhost:3002';
+      const override = window.localStorage?.getItem('mizan_api_url');
+      if (override) return override.replace(/\/$/, '');
+      return FALLBACK_REMOTE_API;
     }
-    return origin;
+
+    return origin.replace(/\/$/, '');
   }
 
-  return 'http://localhost:3002';
+  return FALLBACK_REMOTE_API;
 }
 
-const API_URL = `${resolveApiBase()}/api`;
+export const API_URL = `${resolveApiBase()}/api`;
 
 async function getAuthHeaders(): Promise<HeadersInit> {
   const token = localStorage.getItem('mizan_token');
