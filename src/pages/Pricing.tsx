@@ -28,7 +28,7 @@ export default function Pricing() {
   const navigate = useNavigate();
 
   const handleUpgrade = () => {
-    window.open('https://donate.stripe.com/7sY5kD8G3eKU0GFb9zfUQ05', '_blank');
+    window.open('https://buy.stripe.com/test_9B66oHf4r6eoblj0uVfUQ00', '_blank');
   };
 
   return (

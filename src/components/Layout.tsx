@@ -1,6 +1,6 @@
 import React from 'react';
 import SyncStatus from './SyncStatus';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { createPageUrl } from '@/utils/urls';
 
 interface LayoutProps {
@@ -8,22 +8,27 @@ interface LayoutProps {
 }
 
 export default function Layout({ children }: LayoutProps) {
+  const location = useLocation();
+  const hideHeader = location.pathname === '/';
+
   return (
     <div className="min-h-screen antialiased">
-      <header className="fixed top-0 left-0 right-0 z-50 flex items-center justify-center px-4 md:px-6 py-3 md:py-4 pointer-events-none bg-[#0a0a0b]/85 backdrop-blur border-b border-[#151519]">
-        <nav className="flex items-center gap-2 md:gap-3 pointer-events-auto overflow-x-auto">
-          <HeaderNavLink to={createPageUrl('Landing')} label="Mizan" />
-          <HeaderNavLink to={createPageUrl('CheckIn')} label="Daily" />
-          <HeaderNavLink to={createPageUrl('Status')} label="Status" />
-          <HeaderNavLink to={createPageUrl('Analytics')} label="Analytics" />
-          <HeaderNavLink to={createPageUrl('Pricing')} label="Premium" />
-          <HeaderNavLink to={createPageUrl('Settings')} label="Settings" />
-        </nav>
-        <div className="pointer-events-auto absolute right-4 md:right-6 top-1/2 -translate-y-1/2 hidden md:block">
-          <SyncStatus />
-        </div>
-      </header>
-      <div className="pt-16 md:pt-16">
+      {!hideHeader && (
+        <header className="fixed top-0 left-0 right-0 z-50 flex items-center justify-center px-4 md:px-6 py-3 md:py-4 pointer-events-none bg-[#0a0a0b]/85 backdrop-blur border-b border-[#151519]">
+          <nav className="flex items-center gap-2 md:gap-3 pointer-events-auto overflow-x-auto">
+            <HeaderNavLink to={createPageUrl('Landing')} label="Mizan" />
+            <HeaderNavLink to={createPageUrl('CheckIn')} label="Daily" />
+            <HeaderNavLink to={createPageUrl('Status')} label="Status" />
+            <HeaderNavLink to={createPageUrl('Analytics')} label="Analytics" />
+            <HeaderNavLink to={createPageUrl('Pricing')} label="Premium" />
+            <HeaderNavLink to={createPageUrl('Settings')} label="Settings" />
+          </nav>
+          <div className="pointer-events-auto absolute right-4 md:right-6 top-1/2 -translate-y-1/2 hidden md:block">
+            <SyncStatus />
+          </div>
+        </header>
+      )}
+      <div className={hideHeader ? '' : 'pt-16 md:pt-16'}>
         {children}
       </div>
     </div>
