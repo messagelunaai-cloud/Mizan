@@ -9,7 +9,7 @@ interface LayoutProps {
 
 export default function Layout({ children }: LayoutProps) {
   const location = useLocation();
-  const hideHeader = location.pathname === '/';
+  const hideHeader = location.pathname === '/' || location.pathname === '/access';
 
   return (
     <div className="min-h-screen antialiased">
