@@ -112,7 +112,7 @@ router.post('/login', async (req: Request, res: Response) => {
     }
 
     const db = getDB();
-    const user = db.prepare(`SELECT id, username, password_hash, subscription_tier, trial_ends_at, subscription_ends_at FROM users WHERE username = ?`).get([username]);
+    const user = db.prepare(`SELECT id, username, password_hash, subscription_tier, trial_ends_at, subscription_ends_at FROM users WHERE username = ?`).get([username]) as any;
 
     if (!user) {
       return res.status(401).json({ error: 'Username not found. Please check your credentials or register.' });
@@ -152,7 +152,7 @@ router.post('/login-code', async (req: Request, res: Response) => {
     }
 
     const db = getDB();
-    const user = db.prepare(`SELECT id, username, subscription_tier, trial_ends_at, subscription_ends_at FROM users WHERE access_code = ?`).get([accessCode]);
+    const user = db.prepare(`SELECT id, username, subscription_tier, trial_ends_at, subscription_ends_at FROM users WHERE access_code = ?`).get([accessCode]) as any;
 
     if (!user) {
       return res.status(401).json({ error: 'Access code not recognized. Please check and try again.' });
@@ -309,7 +309,7 @@ router.post('/premium/redeem', authMiddleware, (req: Request, res: Response) => 
     const record = db.prepare(
       `SELECT token, plan, created_for_user_id, expires_at, redeemed_at, redeemed_by_user_id
        FROM premium_tokens WHERE token = ?`
-    ).get([token]);
+    ).get([token]) as any;
 
     if (!record) {
       return res.status(404).json({ error: 'Activation link not found or already used' });
