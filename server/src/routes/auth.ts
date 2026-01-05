@@ -121,7 +121,7 @@ router.post('/login', async (req: Request, res: Response) => {
     console.log('User found:', { id: user.id, username: user.username, hasPasswordHash: !!user.password_hash });
 
     if (!user.password_hash) {
-      return res.status(401).json({ error: 'Account setup incomplete. Please register again.' });
+      return res.status(400).json({ error: 'This account was created with access code only. Use Quick Access to log in, or register a new account with a password.' });
     }
 
     let valid = false;
