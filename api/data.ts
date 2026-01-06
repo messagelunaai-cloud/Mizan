@@ -1,8 +1,24 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import dataRouter from '../server/src/routes/data.js';
+import express from 'express';
+import cors from 'cors';
+import dataRouter from '../server/src/routes/data';
+import { initDatabase } from '../server/src/database';
 
-// Vercel serverless function wrapper
+const app = express();
+app.use(cors());
+app.use(express.json());
+app.use(dataRouter);
+
+// Initialize database once
+let dbInitialized = false;
+async function ensureDB() {
+  if (!dbInitialized) {
+    await initDatabase();
+    dbInitialized = true;
+  }
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // Forward to Express router
-  return dataRouter(req as any, res as any, () => {});
+  await ensureDB();
+  return app(req as any, res as any);
 }
