@@ -3,9 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Loader2 } from 'lucide-react';
 import { createPageUrl } from '@/utils/urls';
-import { useAuth } from '@/contexts/AuthContext';
+import { useSupabaseAuth } from '@/contexts/SupabaseAuthContext';
 
 export default function Access() {
+  const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [accessCode, setAccessCode] = useState('');
@@ -15,7 +16,7 @@ export default function Access() {
   const [isLoading, setIsLoading] = useState(false);
   const [errorShake, setErrorShake] = useState(false);
   const navigate = useNavigate();
-  const { user, login, loginWithCode, register } = useAuth();
+  const { user, signIn, signUp } = useSupabaseAuth();
 
   useEffect(() => {
     // Auto-redirect if user already logged in
@@ -49,37 +50,29 @@ export default function Access() {
     setIsLoading(true);
 
     try {
-      const trimmedCode = accessCode.trim();
+      const trimmedEmail = email.trim();
       const trimmedUsername = username.trim();
       const trimmedPassword = password.trim();
 
-      // Quick login path with access code only
-      if (trimmedCode && !trimmedUsername && !trimmedPassword) {
-        await loginWithCode(trimmedCode);
-        navigate(createPageUrl('Dashboard'));
-        return;
-      }
-
-      if (!trimmedUsername || !trimmedPassword) {
-        setError('Username and password are required');
+      if (!trimmedEmail || !trimmedPassword) {
+        setError('Email and password are required');
         setErrorShake(true);
         return;
       }
 
       if (isRegistering) {
-        const codeError = validateAccessCode(trimmedCode);
-        if (codeError) {
-          setAccessCodeError(codeError);
-          setError('Please fix the access code requirements');
+        if (!trimmedUsername) {
+          setError('Username is required for registration');
           setErrorShake(true);
           return;
         }
-        await register(trimmedUsername, trimmedPassword, trimmedCode || undefined);
+        await signUp(trimmedEmail, trimmedPassword, trimmedUsername);
+        // Note: Supabase requires email verification before login
+        setError('Please check your email to confirm your account');
       } else {
-        await login(trimmedUsername, trimmedPassword);
+        await signIn(trimmedEmail, trimmedPassword);
+        navigate(createPageUrl('Dashboard'));
       }
-
-      navigate(createPageUrl('Dashboard'));
     } catch (err: any) {
       setError(err?.message || 'Unable to authenticate');
       setErrorShake(true);
@@ -136,14 +129,14 @@ export default function Access() {
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.1 }}
                 >
-                  Username
+                  Email
                 </motion.label>
                 <motion.input
-                  type="text"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   className="w-full bg-[#0e0e10] border border-[#1a1a1d] text-[#c4c4c6] px-5 py-4 text-sm tracking-wide outline-none transition-all duration-300 placeholder:text-[#3a3a3d]"
-                  placeholder={isRegistering ? "choose a username" : "your username"}
+                  placeholder="your email"
                   whileFocus={{ boxShadow: '0 0 8px rgba(45, 74, 58, 0.3)' }}
                   onFocus={(e) => {
                     e.currentTarget.style.borderColor = '#2d4a3a';
@@ -153,9 +146,39 @@ export default function Access() {
                   }}
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  transition={{ delay: 0.15 }}
+                  transition={{ delay: 0.1 }}
                 />
               </div>
+
+              {isRegistering && (
+                <div>
+                  <motion.label 
+                    className="block text-[#4a4a4d] text-xs tracking-[0.15em] uppercase mb-2"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.15 }}
+                  >
+                    Username
+                  </motion.label>
+                  <motion.input
+                    type="text"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    className="w-full bg-[#0e0e10] border border-[#1a1a1d] text-[#c4c4c6] px-5 py-4 text-sm tracking-wide outline-none transition-all duration-300 placeholder:text-[#3a3a3d]"
+                    placeholder="choose a username"
+                    whileFocus={{ boxShadow: '0 0 8px rgba(45, 74, 58, 0.3)' }}
+                    onFocus={(e) => {
+                      e.currentTarget.style.borderColor = '#2d4a3a';
+                    }}
+                    onBlur={(e) => {
+                      e.currentTarget.style.borderColor = '#1a1a1d';
+                    }}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.15 }}
+                  />
+                </div>
+              )}
 
               <div>
                 <motion.label 
@@ -171,7 +194,7 @@ export default function Access() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="w-full bg-[#0e0e10] border border-[#1a1a1d] text-[#c4c4c6] px-5 py-4 text-sm tracking-wide outline-none transition-all duration-300 placeholder:text-[#3a3a3d]"
-                  placeholder={isRegistering ? "create a password (min 6 chars)" : "your password"}
+                  placeholder={isRegistering ? "create a password (min 8 chars)" : "your password"}
                   whileFocus={{ boxShadow: '0 0 8px rgba(45, 74, 58, 0.3)' }}
                   onFocus={(e) => {
                     e.currentTarget.style.borderColor = '#2d4a3a';
@@ -223,68 +246,16 @@ export default function Access() {
           </motion.div>
 
           {/* Other Options - Collapsed with smooth animation */}
-          <details className="group">
-            <motion.summary 
-              className="cursor-pointer text-[#4a4a4d] hover:text-[#8a8a8d] text-xs tracking-wide underline decoration-[#2a2a2d] decoration-1 underline-offset-4 transition-colors duration-200"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.4 }}
-            >
-              Other options
-            </motion.summary>
-            <motion.div 
-              className="border border-[#1a1a1d] p-6 bg-[#0a0a0b] mt-4"
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
+          {error && error.includes('check your email') && (
+            <motion.div
+              className="px-4 py-3 bg-blue-950/20 border border-blue-900/30 text-blue-400 text-xs tracking-wide"
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3 }}
             >
-              <p className="text-[#8a8a8d] text-sm tracking-[0.15em] uppercase mb-3">Quick access</p>
-              <p className="text-[#4a4a4d] text-xs mb-4">Login from another device with your access code</p>
-              <motion.input
-                type="text"
-                value={accessCode}
-                onChange={(e) => setAccessCode(e.target.value)}
-                className="w-full bg-[#0e0e10] border border-[#1a1a1d] text-[#c4c4c6] px-5 py-4 text-sm tracking-wide outline-none transition-all duration-300 placeholder:text-[#3a3a3d] mb-3"
-                placeholder="enter your access code"
-                whileFocus={{ boxShadow: '0 0 8px rgba(45, 74, 58, 0.3)' }}
-                onFocus={(e) => {
-                  e.currentTarget.style.borderColor = '#2d4a3a';
-                }}
-                onBlur={(e) => {
-                  e.currentTarget.style.borderColor = '#1a1a1d';
-                }}
-              />
-              {accessCodeError && (
-                <motion.p 
-                  className="text-red-400 text-xs mb-3"
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  {accessCodeError}
-                </motion.p>
-              )}
-              <motion.button
-                type="button"
-                onClick={handleSubmit}
-                disabled={isLoading || !accessCode.trim()}
-                className="w-full py-3 bg-[#0e0e10] border border-[#1a1a1d] text-[#8a8a8d] text-xs tracking-[0.15em] uppercase transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                whileHover={{ scale: 1.02, borderColor: '#2a2a2d', color: '#c4c4c6' }}
-                whileTap={{ scale: 0.98 }}
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>Processing...</span>
-                  </>
-                ) : (
-                  'Quick Login'
-                )}
-              </motion.button>
+              {error}
             </motion.div>
-          </details>
+          )}
         </motion.div>
       </motion.div>
     </div>

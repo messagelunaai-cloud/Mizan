@@ -13,7 +13,7 @@ import ActivatePremium from './pages/ActivatePremium';
 import ThankYou from './pages/ThankYou';
 import RedeemPremium from './pages/RedeemPremium';
 import UserNotRegisteredError from './components/UserNotRegisteredError';
-import { useAuth } from './contexts/AuthContext';
+import { useSupabaseAuth } from './contexts/SupabaseAuthContext';
 import { syncFromServer, readCheckins } from './utils/storage';
 import { 
   getNotificationsEnabled, 
@@ -21,7 +21,7 @@ import {
 } from './utils/notifications';
 
 export default function App() {
-  const { user } = useAuth();
+  const { user } = useSupabaseAuth();
 
   useEffect(() => {
     // Sync data from server on app load if authenticated

@@ -1,7 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
-import { AuthProvider } from './contexts/AuthContext';
+import { SupabaseAuthProvider } from './contexts/SupabaseAuthContext';
 import App from './App';
 import './index.css';
 import { readSettings } from './utils/storage';
@@ -18,9 +18,9 @@ try {
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <React.StrictMode>
     <BrowserRouter>
-      <AuthProvider>
+      <SupabaseAuthProvider>
         <App />
-      </AuthProvider>
+      </SupabaseAuthProvider>
     </BrowserRouter>
   </React.StrictMode>
 );
