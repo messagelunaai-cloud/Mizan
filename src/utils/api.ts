@@ -7,14 +7,15 @@ export function resolveApiBase(): string {
   if (typeof window !== 'undefined') {
     const origin = window.location.origin;
 
-    // If running on localhost without a local API, default to the deployed API to avoid 500s.
-    if (origin.includes('localhost')) {
-      const override = window.localStorage?.getItem('mizan_api_url');
-      if (override) return override.replace(/\/$/, '');
-      return FALLBACK_REMOTE_API;
+    // If deployed (not localhost), use same origin for API
+    if (!origin.includes('localhost')) {
+      return origin.replace(/\/$/, '');
     }
 
-    return origin.replace(/\/$/, '');
+    // For local development, check for override or use deployed API
+    const override = window.localStorage?.getItem('mizan_api_url');
+    if (override) return override.replace(/\/$/, '');
+    return FALLBACK_REMOTE_API;
   }
 
   return FALLBACK_REMOTE_API;
