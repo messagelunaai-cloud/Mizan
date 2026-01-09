@@ -43,7 +43,7 @@ export default function RedeemPremium() {
   }, [rawToken, user]);
 
   const goToDashboard = () => navigate(createPageUrl('Dashboard'));
-  const goToLogin = () => navigate(createPageUrl('Access'));
+  const goToLogin = () => navigate('/'); // Redirect to landing page to sign in
 
   const isLoading = status === 'loading';
   const isSuccess = status === 'success';
