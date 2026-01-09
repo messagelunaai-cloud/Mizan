@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Check, Zap, Crown, TrendingUp, BarChart3, Lock, Mail, FileText, Clock, CreditCard } from 'lucide-react';
+import { Check, Zap, Crown, TrendingUp, BarChart3, Lock, Mail, FileText, Clock, CreditCard, X, Key } from 'lucide-react';
 import { createPageUrl } from '@/utils/urls';
+import { isPremiumEnabled, isPremiumExpired, activateWithCode, getPremiumExpiryDate } from '@/lib/premium';
 
 const features = {
   free: [
@@ -29,6 +30,21 @@ export default function Pricing() {
   const [showPaymentStatus, setShowPaymentStatus] = useState(false);
   const [isCheckingPayment, setIsCheckingPayment] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState<'pending' | 'success' | 'failed'>('pending');
+  const [showCodeInput, setShowCodeInput] = useState(false);
+  const [activationCode, setActivationCode] = useState('');
+  const [codeError, setCodeError] = useState('');
+  const [premiumStatus, setPremiumStatus] = useState<'none' | 'active' | 'expired'>('none');
+
+  useEffect(() => {
+    // Check premium status on component mount
+    if (isPremiumEnabled()) {
+      setPremiumStatus('active');
+    } else if (isPremiumExpired()) {
+      setPremiumStatus('expired');
+    } else {
+      setPremiumStatus('none');
+    }
+  }, []);
 
   const handleUpgrade = () => {
     // Open payment link and show payment status checker
@@ -36,35 +52,24 @@ export default function Pricing() {
     setShowPaymentStatus(true);
   };
 
-  const handleCheckPayment = async () => {
-    setIsCheckingPayment(true);
-    try {
-      // In a real implementation, this would check with Stripe API
-      // For now, we'll simulate checking payment status
-      // You could implement this by:
-      // 1. Storing payment intent IDs when upgrade is clicked
-      // 2. Checking Stripe API for payment status
-      // 3. Auto-activating if payment succeeded
-
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
-
-      // For demo purposes, randomly succeed/fail
-      // In production, check actual Stripe payment status
-      const success = Math.random() > 0.7; // 30% success rate for demo
-
-      if (success) {
-        setPaymentStatus('success');
-        // Here you would call your activation API
-        alert('Payment verified! Premium activated. (This would auto-activate in production)');
-      } else {
-        setPaymentStatus('failed');
-      }
-    } catch (error) {
-      setPaymentStatus('failed');
-    } finally {
-      setIsCheckingPayment(false);
+  const handleActivateWithCode = () => {
+    if (!activationCode.trim()) {
+      setCodeError('Please enter your activation code');
+      return;
     }
+
+    if (activateWithCode(activationCode.trim())) {
+      setCodeError('');
+      setShowCodeInput(false);
+      setPremiumStatus('active');
+      alert('Premium activated successfully!');
+    } else {
+      setCodeError('Invalid activation code. Please check and try again.');
+    }
+  };
+
+  const handleRenewal = () => {
+    window.open('https://buy.stripe.com/test_fZubJ12hF46gahf5PffUQ01', '_blank');
   };
 
   if (showPaymentStatus) {
@@ -141,6 +146,48 @@ export default function Pricing() {
   return (
     <div className="min-h-screen bg-black text-[#c4c4c6] px-6 py-12">
       <div className="max-w-6xl mx-auto">
+
+        {/* Premium Status Banner */}
+        {premiumStatus === 'active' && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-8 p-4 bg-[#2d4a3a]/20 border border-[#3dd98f]/30 rounded-lg text-center"
+          >
+            <div className="flex items-center justify-center gap-2 text-[#3dd98f]">
+              <Crown className="w-5 h-5" />
+              <span className="font-medium">Premium Plan Active</span>
+            </div>
+            {getPremiumExpiryDate() && (
+              <p className="text-sm text-[#8a8a8d] mt-1">
+                Expires: {getPremiumExpiryDate()?.toLocaleDateString()}
+              </p>
+            )}
+          </motion.div>
+        )}
+
+        {/* Premium Expired Banner */}
+        {premiumStatus === 'expired' && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-8 p-4 bg-red-900/20 border border-red-500/30 rounded-lg"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <X className="w-5 h-5 text-red-400" />
+                <span className="text-red-400 font-medium">Premium Plan Expired</span>
+              </div>
+              <button
+                onClick={handleRenewal}
+                className="px-4 py-2 bg-[#2d4a3a] hover:bg-[#3d5a4a] text-[#0a0a0a] text-sm font-medium rounded transition-colors"
+              >
+                Renew Premium
+              </button>
+            </div>
+          </motion.div>
+        )}
+
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -220,6 +267,46 @@ export default function Pricing() {
               <Zap className="w-4 h-4" />
               Upgrade to Premium
             </button>
+
+            {/* More Visible "Already Paid?" Button */}
+            <div className="mt-4 pt-4 border-t border-[#1a1a1d]">
+              <button
+                onClick={() => setShowCodeInput(!showCodeInput)}
+                className="w-full py-3 bg-[#1a1a1d] hover:bg-[#2a2a2d] border-2 border-dashed border-[#3dd98f]/50 text-[#3dd98f] font-medium text-sm tracking-wide transition-all duration-300 flex items-center justify-center gap-2"
+              >
+                <Key className="w-4 h-4" />
+                Already paid? Activate your premium here
+              </button>
+
+              {/* Code Activation Input */}
+              {showCodeInput && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="mt-4 space-y-3"
+                >
+                  <div>
+                    <input
+                      type="text"
+                      value={activationCode}
+                      onChange={(e) => setActivationCode(e.target.value)}
+                      placeholder="Enter your activation code"
+                      className="w-full px-4 py-3 bg-[#0a0a0b] border border-[#1a1a1d] text-[#c4c4c6] placeholder-[#6a6a6d] focus:border-[#3dd98f] focus:outline-none transition-colors"
+                    />
+                    {codeError && (
+                      <p className="text-red-400 text-sm mt-1">{codeError}</p>
+                    )}
+                  </div>
+                  <button
+                    onClick={handleActivateWithCode}
+                    className="w-full py-2 bg-[#3dd98f] hover:bg-[#4eeaa0] text-[#0a0a0a] font-medium text-sm transition-colors"
+                  >
+                    Activate Premium
+                  </button>
+                </motion.div>
+              )}
+            </div>
           </motion.div>
         </div>
 

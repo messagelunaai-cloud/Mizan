@@ -4,16 +4,75 @@
  */
 
 export function isPremiumEnabled(): boolean {
-  return localStorage.getItem("premium_enabled") === "true";
+  const enabled = localStorage.getItem("premium_enabled") === "true";
+  if (!enabled) return false;
+
+  // Check if expired
+  const expiryDate = localStorage.getItem("premium_expires_at");
+  if (expiryDate) {
+    const expiry = new Date(expiryDate);
+    const now = new Date();
+    if (now > expiry) {
+      // Auto-expire premium
+      clearPremiumStates();
+      return false;
+    }
+  }
+
+  return true;
 }
 
 export function isPremiumPending(): boolean {
   return localStorage.getItem("premium_pending") === "true";
 }
 
+export function isPremiumExpired(): boolean {
+  const expiryDate = localStorage.getItem("premium_expires_at");
+  if (!expiryDate) return false;
+
+  const expiry = new Date(expiryDate);
+  const now = new Date();
+  return now > expiry;
+}
+
 export function activatePremium(): void {
+  const oneYearFromNow = new Date();
+  oneYearFromNow.setFullYear(oneYearFromNow.getFullYear() + 1);
+
   localStorage.setItem("premium_enabled", "true");
+  localStorage.setItem("premium_expires_at", oneYearFromNow.toISOString());
+  localStorage.setItem("premium_activation_code", generateActivationCode());
   localStorage.removeItem("premium_pending");
+
+  // Show activation code (in real app, this would be emailed)
+  const code = localStorage.getItem("premium_activation_code");
+  if (code) {
+    setTimeout(() => {
+      alert(`Premium Activated!\n\nBackup Activation Code: ${code}\n\nSave this code in case you need to reactivate premium.`);
+    }, 1000);
+  }
+}
+
+export function getActivationCode(): string | null {
+  return localStorage.getItem("premium_activation_code");
+}
+
+export function activateWithCode(code: string): boolean {
+  const storedCode = localStorage.getItem("premium_activation_code");
+  if (storedCode === code) {
+    const oneYearFromNow = new Date();
+    oneYearFromNow.setFullYear(oneYearFromNow.getFullYear() + 1);
+
+    localStorage.setItem("premium_enabled", "true");
+    localStorage.setItem("premium_expires_at", oneYearFromNow.toISOString());
+    return true;
+  }
+  return false;
+}
+
+export function getPremiumExpiryDate(): Date | null {
+  const expiryDate = localStorage.getItem("premium_expires_at");
+  return expiryDate ? new Date(expiryDate) : null;
 }
 
 export function setPremiumPending(): void {
@@ -23,6 +82,8 @@ export function setPremiumPending(): void {
 export function clearPremiumStates(): void {
   localStorage.removeItem("premium_enabled");
   localStorage.removeItem("premium_pending");
+  localStorage.removeItem("premium_expires_at");
+  // Keep activation code for reactivation
 }
 
 // Check for Stripe redirect with payment=success
@@ -40,4 +101,8 @@ export function handleStripeRedirect(): void {
     url.searchParams.delete('payment');
     window.history.replaceState({}, '', url.toString());
   }
+}
+
+function generateActivationCode(): string {
+  return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
 }
