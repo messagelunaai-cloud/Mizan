@@ -7,6 +7,7 @@ import { readCheckins, getTodayKey, countCompletedCategories, readLeaderboard, r
 import { useCycle } from '@/hooks/useCycle';
 import { CircleProgress } from '@/components/CircleProgress';
 import { handleStripeRedirect, isPremiumPending, activatePremium } from '@/lib/premium';
+import { useClerkAuth } from '@/contexts/ClerkAuthContext';
 
 function formatDateLabel(dateKey: string): string {
   if (!dateKey) return '—';
@@ -30,6 +31,7 @@ const AnimatedCounter = ({ value }: { value: number }) => {
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const { user } = useClerkAuth();
   const { cyclesCompleted, currentProgress } = useCycle();
   const [showPremiumActivated, setShowPremiumActivated] = useState(false);
   const [isActivating, setIsActivating] = useState(false);
@@ -38,8 +40,15 @@ export default function Dashboard() {
 
   // Handle Stripe redirect on component mount
   useEffect(() => {
-    handleStripeRedirect();
-  }, []);
+    handleStripeRedirect(user?.id);
+  }, [user?.id]);
+
+  // Migrate old premium data when user changes
+  useEffect(() => {
+    if (user?.id) {
+      migrateOldPremiumData(user.id);
+    }
+  }, [user?.id]);
 
   const handleActivatePremium = async () => {
     setIsActivating(true);
@@ -47,7 +56,7 @@ export default function Dashboard() {
     // Simulate activation process (like Stripe's animation timing)
     await new Promise(resolve => setTimeout(resolve, 800));
 
-    const code = activatePremium();
+    const code = activatePremium(user?.id);
     setActivationCode(code);
     setShowPremiumActivated(true);
     setIsActivating(false);
@@ -124,7 +133,7 @@ export default function Dashboard() {
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="max-w-2xl mx-auto">
 
         {/* Premium Pending Banner */}
-        {isPremiumPending() && (
+        {isPremiumPending(user?.id) && (
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}

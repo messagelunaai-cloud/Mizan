@@ -15,7 +15,7 @@ import {
   setNotificationsEnabled,
   showNotification
 } from '@/utils/notifications';
-import { isPremiumEnabled, getActivationCode, clearUserPremiumData } from '@/lib/premium';
+import { isPremiumEnabled, getActivationCode, clearPremiumStates, migrateOldPremiumData } from '@/lib/premium';
 
 // Custom animated toggle switch
 const AnimatedToggle = ({ checked, onChange }: { checked: boolean; onChange: (val: boolean) => void }) => (
@@ -92,6 +92,13 @@ export default function Settings() {
         .catch(console.error);
     }
   }, [user]);
+
+  // Migrate old premium data when user changes
+  useEffect(() => {
+    if (user?.id) {
+      migrateOldPremiumData(user.id);
+    }
+  }, [user?.id]);
 
   const validateAccessCode = (code: string): string | null => {
     if (!code) return null;
@@ -332,7 +339,7 @@ export default function Settings() {
           )}
 
           {/* Premium Key Section */}
-          {isPremiumEnabled() && (
+          {isPremiumEnabled(user?.id) && (
             <section className="p-6 border border-[#1a1a1d] bg-[#0a0a0b]">
               <h2 className="text-[#c4c4c6] text-sm tracking-wide mb-3">Premium Key</h2>
               <div className="space-y-3">
@@ -346,7 +353,7 @@ export default function Settings() {
                   </span>
                   {showPremiumKey ? 'Hide Key' : 'Show Key'}
                 </button>
-                {showPremiumKey && getActivationCode() && (
+                {showPremiumKey && getActivationCode(user?.id) && (
                   <motion.div
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: 'auto' }}
@@ -355,11 +362,11 @@ export default function Settings() {
                   >
                     <div className="flex items-center gap-2">
                       <code className="flex-1 px-2 py-1 bg-[#1a1a1d] text-[#3dd98f] font-mono text-sm rounded border border-[#2a2a2d]">
-                        {getActivationCode()}
+                        {getActivationCode(user?.id)}
                       </code>
                       <motion.button
                         onClick={async () => {
-                          await navigator.clipboard.writeText(getActivationCode()!);
+                          await navigator.clipboard.writeText(getActivationCode(user?.id)!);
                           setPremiumKeyCopyStatus('copied');
                           setTimeout(() => setPremiumKeyCopyStatus('idle'), 2000);
                         }}
@@ -382,7 +389,7 @@ export default function Settings() {
                     <div className="mt-3 pt-3 border-t border-[#1a1a1d]">
                       <button
                         onClick={() => {
-                          clearUserPremiumData();
+                          clearPremiumStates(user?.id);
                           setSavedMsg('Premium data cleared for current user');
                           setTimeout(() => setSavedMsg(''), 3000);
                           // Refresh the page to update the UI

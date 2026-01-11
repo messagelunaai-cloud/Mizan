@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Check, Zap, Crown, TrendingUp, BarChart3, Lock, Mail, FileText, Clock, CreditCard, X, Key } from 'lucide-react';
 import { createPageUrl } from '@/utils/urls';
-import { isPremiumEnabled, isPremiumExpired, activateWithCode, getPremiumExpiryDate } from '@/lib/premium';
+import { isPremiumEnabled, isPremiumExpired, activateWithCode, getPremiumExpiryDate, migrateOldPremiumData } from '@/lib/premium';
+import { useClerkAuth } from '@/contexts/ClerkAuthContext';
 
 const features = {
   free: [
@@ -27,6 +28,7 @@ const features = {
 
 export default function Pricing() {
   const navigate = useNavigate();
+  const { user } = useClerkAuth();
   const [showPaymentStatus, setShowPaymentStatus] = useState(false);
   const [isCheckingPayment, setIsCheckingPayment] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState<'pending' | 'success' | 'failed'>('pending');
@@ -38,9 +40,9 @@ export default function Pricing() {
   useEffect(() => {
     // Check premium status on component mount and when user changes
     const checkPremiumStatus = () => {
-      if (isPremiumEnabled()) {
+      if (isPremiumEnabled(user?.id)) {
         setPremiumStatus('active');
-      } else if (isPremiumExpired()) {
+      } else if (isPremiumExpired(user?.id)) {
         setPremiumStatus('expired');
       } else {
         setPremiumStatus('none');
@@ -48,7 +50,14 @@ export default function Pricing() {
     };
 
     checkPremiumStatus();
-  }, []); // Re-run when user changes if we add user dependency
+  }, [user?.id]); // Re-run when user changes if we add user dependency
+
+  // Migrate old premium data when user changes
+  useEffect(() => {
+    if (user?.id) {
+      migrateOldPremiumData(user.id);
+    }
+  }, [user?.id]);
 
   const handleUpgrade = () => {
     // Open payment link in new tab
@@ -62,7 +71,7 @@ export default function Pricing() {
       return;
     }
 
-    if (activateWithCode(activationCode.trim())) {
+    if (activateWithCode(activationCode.trim(), user?.id)) {
       setCodeError('');
       setShowCodeInput(false);
       setPremiumStatus('active');
@@ -162,9 +171,9 @@ export default function Pricing() {
               <Crown className="w-4 h-4" />
               <span className="text-sm font-medium">Premium Plan Active</span>
             </div>
-            {getPremiumExpiryDate() && (
+            {getPremiumExpiryDate(user?.id) && (
               <p className="text-xs text-[#6a6a6d] mt-1">
-                Expires: {getPremiumExpiryDate()?.toLocaleDateString()}
+                Expires: {getPremiumExpiryDate(user?.id)?.toLocaleDateString()}
               </p>
             )}
           </motion.div>
