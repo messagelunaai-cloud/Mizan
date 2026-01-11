@@ -81,11 +81,25 @@ export function setPremiumPending(): void {
   localStorage.setItem(getUserKey("premium_pending"), "true");
 }
 
-export function clearPremiumStates(): void {
-  localStorage.removeItem(getUserKey("premium_enabled"));
-  localStorage.removeItem(getUserKey("premium_pending"));
-  localStorage.removeItem(getUserKey("premium_expires_at"));
-  // Keep activation code for reactivation
+export function clearUserPremiumData(): void {
+  const user = readUser() || 'guest';
+  const keysToRemove = [
+    `premium_enabled_${user}`,
+    `premium_pending_${user}`,
+    `premium_expires_at_${user}`,
+    `premium_activation_code_${user}`
+  ];
+
+  keysToRemove.forEach(key => {
+    localStorage.removeItem(key);
+  });
+}
+
+export function debugPremiumKeys(): void {
+  const allKeys = Object.keys(localStorage).filter(key => key.includes('premium_'));
+  console.log('Premium keys in localStorage:', allKeys);
+  const currentUser = readUser() || 'guest';
+  console.log('Current user:', currentUser);
 }
 
 // Check for Stripe redirect with payment=success

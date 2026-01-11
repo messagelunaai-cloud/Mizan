@@ -15,7 +15,7 @@ import {
   setNotificationsEnabled,
   showNotification
 } from '@/utils/notifications';
-import { isPremiumEnabled, getActivationCode } from '@/lib/premium';
+import { isPremiumEnabled, getActivationCode, clearUserPremiumData } from '@/lib/premium';
 
 // Custom animated toggle switch
 const AnimatedToggle = ({ checked, onChange }: { checked: boolean; onChange: (val: boolean) => void }) => (
@@ -52,6 +52,7 @@ export default function Settings() {
   const [customCategories, setCustomCategories] = useState('');
   const [featureFlags, setFeatureFlags] = useState({ prioritySupport: false, earlyAccess: false, supportChannel: 'discord' as 'discord' | 'email' | 'none' });
   const [showPremiumKey, setShowPremiumKey] = useState(false);
+  const [premiumKeyCopyStatus, setPremiumKeyCopyStatus] = useState<'idle' | 'copied'>('idle');
   const navigate = useNavigate();
   const { user, signOut } = useClerkAuth();
 
@@ -356,18 +357,42 @@ export default function Settings() {
                       <code className="flex-1 px-2 py-1 bg-[#1a1a1d] text-[#3dd98f] font-mono text-sm rounded border border-[#2a2a2d]">
                         {getActivationCode()}
                       </code>
-                      <button
+                      <motion.button
                         onClick={async () => {
                           await navigator.clipboard.writeText(getActivationCode()!);
-                          setSavedMsg('Key copied to clipboard!');
-                          setTimeout(() => setSavedMsg(''), 2000);
+                          setPremiumKeyCopyStatus('copied');
+                          setTimeout(() => setPremiumKeyCopyStatus('idle'), 2000);
                         }}
-                        className="px-3 py-1 bg-[#2d4a3a] hover:bg-[#3d5a4a] text-[#0a0a0a] text-sm rounded transition-colors"
+                        className="px-3 py-1 bg-[#2d4a3a] hover:bg-[#3d5a4a] text-[#0a0a0a] text-sm rounded transition-colors min-w-[60px]"
+                        animate={premiumKeyCopyStatus === 'copied' ? { scale: [1, 1.05, 1] } : {}}
+                        transition={{ duration: 0.2 }}
                       >
-                        Copy
-                      </button>
+                        <motion.span
+                          key={premiumKeyCopyStatus}
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: 10 }}
+                          transition={{ duration: 0.2 }}
+                        >
+                          {premiumKeyCopyStatus === 'copied' ? 'Copied!' : 'Copy'}
+                        </motion.span>
+                      </motion.button>
                     </div>
                     <p className="text-[#4a4a4d] text-xs mt-2">Use this code to reactivate premium on another device or after data reset.</p>
+                    <div className="mt-3 pt-3 border-t border-[#1a1a1d]">
+                      <button
+                        onClick={() => {
+                          clearUserPremiumData();
+                          setSavedMsg('Premium data cleared for current user');
+                          setTimeout(() => setSavedMsg(''), 3000);
+                          // Refresh the page to update the UI
+                          window.location.reload();
+                        }}
+                        className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-xs rounded transition-colors"
+                      >
+                        Clear Premium Data
+                      </button>
+                    </div>
                   </motion.div>
                 )}
               </div>

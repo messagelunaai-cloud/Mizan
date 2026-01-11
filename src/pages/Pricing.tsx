@@ -36,20 +36,24 @@ export default function Pricing() {
   const [premiumStatus, setPremiumStatus] = useState<'none' | 'active' | 'expired'>('none');
 
   useEffect(() => {
-    // Check premium status on component mount
-    if (isPremiumEnabled()) {
-      setPremiumStatus('active');
-    } else if (isPremiumExpired()) {
-      setPremiumStatus('expired');
-    } else {
-      setPremiumStatus('none');
-    }
-  }, []);
+    // Check premium status on component mount and when user changes
+    const checkPremiumStatus = () => {
+      if (isPremiumEnabled()) {
+        setPremiumStatus('active');
+      } else if (isPremiumExpired()) {
+        setPremiumStatus('expired');
+      } else {
+        setPremiumStatus('none');
+      }
+    };
+
+    checkPremiumStatus();
+  }, []); // Re-run when user changes if we add user dependency
 
   const handleUpgrade = () => {
-    // Open payment link and show payment status checker
+    // Open payment link in new tab
     window.open('https://buy.stripe.com/test_fZubJ12hF46gahf5PffUQ01', '_blank');
-    setShowPaymentStatus(true);
+    // Don't automatically show payment status - let user check manually if needed
   };
 
   const handleActivateWithCode = () => {
