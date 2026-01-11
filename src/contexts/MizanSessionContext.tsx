@@ -103,9 +103,13 @@ export function MizanSessionProvider({ children }: { children: ReactNode }) {
           let token = localStorage.getItem('mizan_token');
           if (!token) {
             console.log('Creating Mizan token for Clerk user:', clerkUser.email);
-            const result = await getOrCreateClerkToken(clerkUser.id, clerkUser.email, clerkUser.username);
-            if (result.token) {
-              localStorage.setItem('mizan_token', result.token);
+            try {
+              const result = await getOrCreateClerkToken(clerkUser.id, clerkUser.email, clerkUser.username);
+              if (result.token) {
+                localStorage.setItem('mizan_token', result.token);
+              }
+            } catch (tokenErr) {
+              console.warn('Failed to create Clerk token, falling back to cache:', tokenErr);
             }
           }
         }
