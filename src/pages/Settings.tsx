@@ -34,6 +34,7 @@ const AnimatedToggle = ({ checked, onChange }: { checked: boolean; onChange: (va
 );
 
 export default function Settings() {
+  console.log('[Settings] Mounting component');
   const [savedMsg, setSavedMsg] = useState('');
   const [confirmReset, setConfirmReset] = useState(false);
   const [resetStage, setResetStage] = useState(0); // 0: none, 1: confirm, 2: final
@@ -243,6 +244,18 @@ export default function Settings() {
       setTimeout(() => navigate(createPageUrl('Landing')), 800);
     }
   };
+
+  console.log('[Settings] About to render, user:', user?.email);
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-black text-[#c4c4c6] flex items-center justify-center px-6 py-12">
+        <div className="max-w-2xl mx-auto text-center">
+          <p>Settings require authentication. Please log in.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-black text-[#c4c4c6] px-6 py-12">
