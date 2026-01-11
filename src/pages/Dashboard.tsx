@@ -6,7 +6,7 @@ import { createPageUrl } from '@/utils/urls';
 import { readCheckins, getTodayKey, countCompletedCategories, readLeaderboard, readUser, readPointsLog } from '@/utils/storage';
 import { useCycle } from '@/hooks/useCycle';
 import { CircleProgress } from '@/components/CircleProgress';
-import { handleStripeRedirect, isPremiumPending, activatePremium, migrateOldPremiumData } from '@/lib/premium';
+import { handleStripeRedirect, checkStripeRedirect, isPremiumPending, activatePremium, migrateOldPremiumData } from '@/lib/premium';
 import { useClerkAuth } from '@/contexts/ClerkAuthContext';
 
 function formatDateLabel(dateKey: string): string {
@@ -38,12 +38,27 @@ export default function Dashboard() {
   const [activationCode, setActivationCode] = useState<string | null>(null);
   const [copyStatus, setCopyStatus] = useState<'idle' | 'copied'>('idle');
 
-  // Handle Stripe redirect on component mount - only when user is loaded
+  // Handle Stripe redirect on component mount - check for payment success
   useEffect(() => {
-    if (user?.id) {
-      handleStripeRedirect(user.id);
+    if (checkStripeRedirect()) {
+      console.log('🔄 Stripe redirect detected on dashboard mount');
+      // If user is already loaded, handle immediately
+      if (user?.id) {
+        handleStripeRedirect(user.id);
+      } else {
+        // User not loaded yet, set up a timeout to check again
+        const checkUserAndHandle = () => {
+          if (user?.id) {
+            handleStripeRedirect(user.id);
+          } else {
+            // Retry after a short delay
+            setTimeout(checkUserAndHandle, 100);
+          }
+        };
+        checkUserAndHandle();
+      }
     }
-  }, [user?.id]);
+  }, []); // Run only on mount
 
   // Migrate old premium data when user changes
   useEffect(() => {
