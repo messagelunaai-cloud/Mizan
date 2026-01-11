@@ -6,7 +6,7 @@ import { createPageUrl } from '@/utils/urls';
 import { readCheckins, getTodayKey, countCompletedCategories, readLeaderboard, readUser, readPointsLog } from '@/utils/storage';
 import { useCycle } from '@/hooks/useCycle';
 import { CircleProgress } from '@/components/CircleProgress';
-import { handleStripeRedirect, isPremiumPending, activatePremium } from '@/lib/premium';
+import { handleStripeRedirect, isPremiumPending, activatePremium, migrateOldPremiumData } from '@/lib/premium';
 import { useClerkAuth } from '@/contexts/ClerkAuthContext';
 
 function formatDateLabel(dateKey: string): string {
