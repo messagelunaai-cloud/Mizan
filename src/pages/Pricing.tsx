@@ -187,7 +187,7 @@ export default function Pricing() {
             </button>
 
             {/* More Visible "Already Paid?" Button */}
-            {premiumStatus !== 'active' && (
+            {!isPremium && (
               <div className="mt-4">
                 <button
                   onClick={() => setShowCodeInput(!showCodeInput)}

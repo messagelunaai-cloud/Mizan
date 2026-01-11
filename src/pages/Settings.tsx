@@ -43,7 +43,7 @@ export default function Settings() {
   const [currentAccessCode, setCurrentAccessCode] = useState<string | null>(null);
   const [isLoadingCode, setIsLoadingCode] = useState(false);
   const [notificationsEnabled, setNotificationsEnabledState] = useState(false);
-  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>('default');
+  const [notificationPermission, setNotificationPermission] = useState<'default' | 'granted' | 'denied'>('default');
   const [notificationTimes, setNotificationTimes] = useState<string[]>(['20:00', '14:00', '08:00']);
   const [notifyDailyCheckin, setNotifyDailyCheckin] = useState(true);
   const [notifyCycleEnd, setNotifyCycleEnd] = useState(true);
