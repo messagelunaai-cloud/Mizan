@@ -34,6 +34,7 @@ export default function Dashboard() {
   const [showPremiumActivated, setShowPremiumActivated] = useState(false);
   const [isActivating, setIsActivating] = useState(false);
   const [activationCode, setActivationCode] = useState<string | null>(null);
+  const [copyStatus, setCopyStatus] = useState<'idle' | 'copied'>('idle');
 
   // Handle Stripe redirect on component mount
   useEffect(() => {
@@ -51,11 +52,7 @@ export default function Dashboard() {
     setShowPremiumActivated(true);
     setIsActivating(false);
 
-    // Hide confirmation after 10 seconds (longer for code visibility)
-    setTimeout(() => {
-      setShowPremiumActivated(false);
-      setActivationCode(null);
-    }, 10000);
+    // No longer auto-hide - user must click copy or X to close
   };
 
   const metrics = useMemo(() => {
@@ -187,9 +184,21 @@ export default function Dashboard() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="mb-6 p-4 bg-[#1a1a1d]/50 border border-[#2d4a3a]/40 rounded-lg"
+            className="mb-6 p-4 bg-[#1a1a1d]/50 border border-[#2d4a3a]/40 rounded-lg relative"
           >
-            <div className="text-center">
+            {/* Close button */}
+            <button
+              onClick={() => {
+                setShowPremiumActivated(false);
+                setActivationCode(null);
+                setCopyStatus('idle');
+              }}
+              className="absolute top-3 right-3 w-6 h-6 flex items-center justify-center text-[#6a6a6d] hover:text-[#c4c4c6] hover:bg-[#2a2a2d] rounded transition-colors"
+            >
+              ✕
+            </button>
+
+            <div className="text-center pr-8">
               <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
@@ -208,15 +217,26 @@ export default function Dashboard() {
                     <code className="flex-1 px-2 py-1 bg-[#1a1a1d] text-[#3dd98f] font-mono text-xs rounded border border-[#2a2a2d]">
                       {activationCode}
                     </code>
-                    <button
-                      onClick={() => {
-                        navigator.clipboard.writeText(activationCode);
-                        // Could show a brief "Copied!" message
+                    <motion.button
+                      onClick={async () => {
+                        await navigator.clipboard.writeText(activationCode);
+                        setCopyStatus('copied');
+                        setTimeout(() => setCopyStatus('idle'), 2000);
                       }}
-                      className="px-2 py-1 bg-[#1a1a1d] hover:bg-[#2a2a2d] text-[#c4c4c6] text-xs rounded border border-[#2a2a2d] transition-colors"
+                      className="px-2 py-1 bg-[#1a1a1d] hover:bg-[#2a2a2d] text-[#c4c4c6] text-xs rounded border border-[#2a2a2d] transition-colors min-w-[60px]"
+                      animate={copyStatus === 'copied' ? { scale: [1, 1.05, 1] } : {}}
+                      transition={{ duration: 0.2 }}
                     >
-                      Copy
-                    </button>
+                      <motion.span
+                        key={copyStatus}
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 10 }}
+                        transition={{ duration: 0.2 }}
+                      >
+                        {copyStatus === 'copied' ? 'Copied!' : 'Copy'}
+                      </motion.span>
+                    </motion.button>
                   </div>
                   <p className="text-xs text-[#6a6a6d] mt-2">Use this code to reactivate premium if needed.</p>
                 </div>

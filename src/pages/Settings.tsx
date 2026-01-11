@@ -15,6 +15,7 @@ import {
   setNotificationsEnabled,
   showNotification
 } from '@/utils/notifications';
+import { isPremiumEnabled, getActivationCode } from '@/lib/premium';
 
 // Custom animated toggle switch
 const AnimatedToggle = ({ checked, onChange }: { checked: boolean; onChange: (val: boolean) => void }) => (
@@ -50,6 +51,7 @@ export default function Settings() {
   const [focusPhrase, setFocusPhrase] = useState('Consistency is earned.');
   const [customCategories, setCustomCategories] = useState('');
   const [featureFlags, setFeatureFlags] = useState({ prioritySupport: false, earlyAccess: false, supportChannel: 'discord' as 'discord' | 'email' | 'none' });
+  const [showPremiumKey, setShowPremiumKey] = useState(false);
   const navigate = useNavigate();
   const { user, signOut } = useClerkAuth();
 
@@ -327,6 +329,51 @@ export default function Settings() {
               </section>
             </>
           )}
+
+          {/* Premium Key Section */}
+          {isPremiumEnabled() && (
+            <section className="p-6 border border-[#1a1a1d] bg-[#0a0a0b]">
+              <h2 className="text-[#c4c4c6] text-sm tracking-wide mb-3">Premium Key</h2>
+              <div className="space-y-3">
+                <p className="text-[#4a4a4d] text-xs mb-3">Your activation code for backup reactivation</p>
+                <button
+                  onClick={() => setShowPremiumKey(!showPremiumKey)}
+                  className="flex items-center gap-2 text-[#6a6a6d] hover:text-[#c4c4c6] text-sm transition-colors"
+                >
+                  <span className="w-4 h-4 border border-current rounded flex items-center justify-center text-xs">
+                    {showPremiumKey ? '−' : '+'}
+                  </span>
+                  {showPremiumKey ? 'Hide Key' : 'Show Key'}
+                </button>
+                {showPremiumKey && getActivationCode() && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="bg-[#0e0e10] border border-[#1a1a1d] p-3 rounded"
+                  >
+                    <div className="flex items-center gap-2">
+                      <code className="flex-1 px-2 py-1 bg-[#1a1a1d] text-[#3dd98f] font-mono text-sm rounded border border-[#2a2a2d]">
+                        {getActivationCode()}
+                      </code>
+                      <button
+                        onClick={async () => {
+                          await navigator.clipboard.writeText(getActivationCode()!);
+                          setSavedMsg('Key copied to clipboard!');
+                          setTimeout(() => setSavedMsg(''), 2000);
+                        }}
+                        className="px-3 py-1 bg-[#2d4a3a] hover:bg-[#3d5a4a] text-[#0a0a0a] text-sm rounded transition-colors"
+                      >
+                        Copy
+                      </button>
+                    </div>
+                    <p className="text-[#4a4a4d] text-xs mt-2">Use this code to reactivate premium on another device or after data reset.</p>
+                  </motion.div>
+                )}
+              </div>
+            </section>
+          )}
+
           {/* Themes & personalization */}
           <section className="p-6 border border-[#1a1a1d] bg-[#0a0a0b] space-y-4">
             <div className="flex items-center justify-between">
