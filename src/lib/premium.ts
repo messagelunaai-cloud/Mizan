@@ -158,12 +158,17 @@ export function checkStripeRedirect(): boolean {
 
 // Handle Stripe redirect - call this on dashboard mount
 export function handleStripeRedirect(userId?: string): void {
+  console.log('🎯 handleStripeRedirect called with userId:', userId);
   if (checkStripeRedirect()) {
+    console.log('💳 Setting premium pending for user:', userId);
     setPremiumPending(userId);
     // Clean up URL
     const url = new URL(window.location.href);
     url.searchParams.delete('payment');
     window.history.replaceState({}, '', url.toString());
+    console.log('🧹 Cleaned up URL');
+  } else {
+    console.log('❌ No Stripe redirect detected in handleStripeRedirect');
   }
 }
 

@@ -32,6 +32,7 @@ const AnimatedCounter = ({ value }: { value: number }) => {
 export default function Dashboard() {
   const navigate = useNavigate();
   const { user } = useClerkAuth();
+  console.log('👤 Dashboard user state:', user);
   const { cyclesCompleted, currentProgress } = useCycle();
   const [showPremiumActivated, setShowPremiumActivated] = useState(false);
   const [isActivating, setIsActivating] = useState(false);
@@ -40,15 +41,20 @@ export default function Dashboard() {
 
   // Handle Stripe redirect on component mount - check for payment success
   useEffect(() => {
+    console.log('🚀 Dashboard mounted, checking for Stripe redirect...');
     if (checkStripeRedirect()) {
-      console.log('🔄 Stripe redirect detected on dashboard mount');
+      console.log('🔄 Stripe redirect detected on dashboard mount, user:', user);
       // If user is already loaded, handle immediately
       if (user?.id) {
+        console.log('✅ User loaded, handling Stripe redirect immediately');
         handleStripeRedirect(user.id);
       } else {
+        console.log('⏳ User not loaded yet, setting up retry mechanism');
         // User not loaded yet, set up a timeout to check again
         const checkUserAndHandle = () => {
+          console.log('🔄 Retry check - user:', user);
           if (user?.id) {
+            console.log('✅ User now loaded, handling Stripe redirect');
             handleStripeRedirect(user.id);
           } else {
             // Retry after a short delay
@@ -57,6 +63,8 @@ export default function Dashboard() {
         };
         checkUserAndHandle();
       }
+    } else {
+      console.log('❌ No Stripe redirect detected');
     }
   }, []); // Run only on mount
 
