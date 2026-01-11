@@ -112,6 +112,55 @@ export async function getUserInfo() {
   return response.json();
 }
 
+export async function getMizanSession() {
+  const response = await fetch(`${API_URL}/data/me`, {
+    headers: await getAuthHeaders()
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to load session');
+  }
+
+  return response.json();
+}
+
+export async function getSummary(range: string = '14d') {
+  const response = await fetch(`${API_URL}/data/summary?range=${encodeURIComponent(range)}`, {
+    headers: await getAuthHeaders()
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to load summary');
+  }
+
+  return response.json();
+}
+
+export async function acceptPledge() {
+  const response = await fetch(`${API_URL}/data/pledge/accept`, {
+    method: 'POST',
+    headers: await getAuthHeaders()
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to accept pledge');
+  }
+
+  return response.json();
+}
+
+export async function getLoss() {
+  const response = await fetch(`${API_URL}/data/loss`, {
+    headers: await getAuthHeaders()
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to load loss');
+  }
+
+  return response.json();
+}
+
 export async function updateSubscription(data: { tier: string; subscriptionEndsAt?: string | null }) {
   const response = await fetch(`${API_URL}/auth/update-subscription`, {
     method: 'POST',

@@ -240,13 +240,30 @@ router.get('/me', authMiddleware, async (req: Request, res: Response) => {
     const userId = (req as any).userId;
     const db = getDB();
     
-    const result = await db.execute({ sql: 'SELECT id, username, access_code, subscription_tier, trial_ends_at, subscription_ends_at FROM users WHERE id = ?', args: [userId] });
+    const result = await db.execute({ sql: 'SELECT id, username, access_code, subscription_tier, trial_ends_at, subscription_ends_at, premium_until, schema_version, pledge_accepted_at, premium_started_at, commitment_ends_at FROM users WHERE id = ?', args: [userId] });
     
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'User not found' });
     }
 
+    const settingsResult = await db.execute({ sql: 'SELECT settings, settings_json, schema_version FROM settings WHERE user_id = ?', args: [userId] });
+    const settingsRow = settingsResult.rows[0];
+    let parsedSettings: any = { requireThreeOfFive: true };
+    let settingsSchemaVersion = 1;
+    try {
+      const raw = settingsRow?.settings_json || settingsRow?.settings;
+      parsedSettings = raw ? JSON.parse(raw as string) : { requireThreeOfFive: true };
+      settingsSchemaVersion = settingsRow?.schema_version ? Number(settingsRow.schema_version) : 1;
+    } catch (err) {
+      parsedSettings = { requireThreeOfFive: true };
+    }
+
     const user = result.rows[0];
+    const isPremium = Boolean(
+      (user.subscription_tier === 'premium' && (!user.subscription_ends_at || new Date(user.subscription_ends_at as string) > new Date())) ||
+      (user.premium_until && new Date(user.premium_until as string) > new Date())
+    );
+
     res.json({
       id: user.id,
       username: user.username,
@@ -254,8 +271,15 @@ router.get('/me', authMiddleware, async (req: Request, res: Response) => {
       subscription: {
         tier: user.subscription_tier || 'free',
         trialEndsAt: user.trial_ends_at,
-        subscriptionEndsAt: user.subscription_ends_at
-      }
+        subscriptionEndsAt: user.subscription_ends_at || user.premium_until || null
+      },
+      pledgeAcceptedAt: user.pledge_accepted_at || null,
+      premiumStartedAt: user.premium_started_at || null,
+      commitmentEndsAt: user.commitment_ends_at || null,
+      schemaVersion: user.schema_version || settingsSchemaVersion,
+      settings: parsedSettings,
+      featureFlags: parsedSettings.featureFlags || { premiumV2: false, mizanStrictMode: false },
+      paywallReason: isPremium ? null : { code: 'premium_required', feature: 'premium_v2' }
     });
   } catch (error) {
     console.error('Get user info error:', error);

@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { readCheckins, calculateRank, RankTitle, readMissionsProgress, readAchievementsProgress } from '@/utils/storage';
+import { Lock } from 'lucide-react';
 import { listMissions, listAchievements } from '@/utils/gamification';
 import { useCycle } from '@/hooks/useCycle';
 import { CycleGrid } from '@/components/CycleGrid';
@@ -35,7 +36,7 @@ const AnimatedCounter = ({ to, delay }: { to: number; delay: number }) => {
   return <span>{count}</span>;
 };
 
-const StatBlock = ({ value, label, delay }: { value: number; label: string; delay: number }) => (
+const StatBlock = ({ value, label, delay, sealed }: { value: number; label: string; delay: number; sealed?: boolean }) => (
   <motion.div
     initial={{ opacity: 0, y: 20, scale: 0.95 }}
     animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -48,7 +49,10 @@ const StatBlock = ({ value, label, delay }: { value: number; label: string; dela
       animate={{ opacity: 1 }}
       transition={{ delay: delay + 0.2 }}
     >
-      <AnimatedCounter to={value} delay={delay} />
+      <span className="flex items-center justify-center gap-2">
+        <AnimatedCounter to={value} delay={delay} />
+        {sealed && <Lock className="w-4 h-4 text-[#6a6a6d]" title="Entry closed" />}
+      </span>
     </motion.p>
     <motion.p 
       className="text-[#4a4a4d] text-xs tracking-[0.15em] uppercase"
@@ -161,7 +165,7 @@ export default function Status() {
           animate={{ opacity: 1 }}
           transition={{ staggerChildren: 0.05, delayChildren: 0.3 }}
         >
-          <StatBlock value={totals.completedDays} label="Days completed" delay={0.3} />
+          <StatBlock value={totals.completedDays} label="Days completed" delay={0.3} sealed />
           <StatBlock value={cyclesCompleted} label="Cycles completed" delay={0.4} />
           <StatBlock value={totals.currentStreak} label="Current streak" delay={0.5} />
           <StatBlock value={totals.penaltiesOutstanding} label="Penalties pending" delay={0.6} />

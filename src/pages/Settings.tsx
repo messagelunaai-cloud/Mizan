@@ -16,6 +16,7 @@ import {
   showNotification
 } from '@/utils/notifications';
 import { isPremiumEnabled, getActivationCode, clearPremiumStates, migrateOldPremiumData } from '@/lib/premium';
+import { useMizanSession } from '@/contexts/MizanSessionContext';
 
 // Custom animated toggle switch
 const AnimatedToggle = ({ checked, onChange }: { checked: boolean; onChange: (val: boolean) => void }) => (
@@ -53,8 +54,10 @@ export default function Settings() {
   const [featureFlags, setFeatureFlags] = useState({ prioritySupport: false, earlyAccess: false, supportChannel: 'discord' as 'discord' | 'email' | 'none' });
   const [showPremiumKey, setShowPremiumKey] = useState(false);
   const [premiumKeyCopyStatus, setPremiumKeyCopyStatus] = useState<'idle' | 'copied'>('idle');
+  const [strictnessLevel, setStrictnessLevel] = useState(1);
   const navigate = useNavigate();
   const { user, signOut } = useClerkAuth();
+  const { isPremium, saveStrictness, refetch } = useMizanSession();
 
   useEffect(() => {
     // Check notification status
@@ -83,6 +86,9 @@ export default function Settings() {
       earlyAccess: s.featureFlags?.earlyAccess ?? false,
       supportChannel: s.featureFlags?.supportChannel || 'discord'
     });
+    if (typeof (s as any).strictnessLevel === 'number') {
+      setStrictnessLevel(Math.max(1, Math.min(5, (s as any).strictnessLevel)));
+    }
     // Fetch current user info including access code
     if (user) {
       getUserInfo()
@@ -178,6 +184,7 @@ export default function Settings() {
         .map((c) => c.trim())
         .filter(Boolean),
       featureFlags,
+      strictnessLevel,
       ...next
     } as any;
     writeSettings(merged);
@@ -208,6 +215,15 @@ export default function Settings() {
     setFeatureFlags(merged as any);
     persistSettings({ featureFlags: merged as any });
     setSavedMsg('Preferences saved');
+    setTimeout(() => setSavedMsg(''), 2000);
+  };
+
+  const saveStrictnessLevel = async () => {
+    const clamped = Math.max(1, Math.min(5, strictnessLevel));
+    setStrictnessLevel(clamped);
+    await saveStrictness(clamped);
+    await refetch();
+    setSavedMsg('Strictness saved');
     setTimeout(() => setSavedMsg(''), 2000);
   };
 
@@ -470,6 +486,39 @@ export default function Settings() {
               </div>
               <p className="text-[#4a4a4d] text-xs">Stored in your settings; wire into check-ins later.</p>
             </div>
+          </section>
+
+          {/* Strictness */}
+          <section className="p-6 border border-[#1a1a1d] bg-[#0a0a0b] space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-[#c4c4c6] text-sm tracking-wide">Strictness</h2>
+              <span className="text-[#4a4a4d] text-xs">Server-enforced after save</span>
+            </div>
+            {isPremium ? (
+              <div className="space-y-3">
+                <input
+                  type="range"
+                  min={1}
+                  max={5}
+                  value={strictnessLevel}
+                  onChange={(e) => setStrictnessLevel(Number(e.target.value))}
+                  className="w-full"
+                />
+                <p className="text-xs text-[#c4c4c6]">Level {strictnessLevel}. Preview only. No change until saved.</p>
+                <button
+                  type="button"
+                  onClick={saveStrictnessLevel}
+                  className="px-4 py-2 bg-[#2d4a3a] text-[#0a0a0a] font-semibold text-sm tracking-wide"
+                >
+                  Save strictness
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 text-sm text-[#8a8a8d]">
+                <Lock className="w-4 h-4 text-[#6a6a6d]" />
+                <span>Strictness controls are locked.</span>
+              </div>
+            )}
           </section>
 
           {/* Notifications Section */}          <section className="p-6 border border-[#1a1a1d] bg-[#0a0a0b] space-y-4">

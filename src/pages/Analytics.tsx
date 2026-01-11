@@ -3,11 +3,11 @@ import { motion } from 'framer-motion';
 import { TrendingUp, Calendar, Target, Lock, Crown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { readCheckins } from '@/utils/storage';
-import { useSubscription } from '@/hooks/useSubscription';
+import { useMizanSession } from '@/contexts/MizanSessionContext';
 import { createPageUrl } from '@/utils/urls';
 
 export default function Analytics() {
-  const { isPremium } = useSubscription();
+  const { isPremium } = useMizanSession();
   const navigate = useNavigate();
   
   // Calculate basic stats for preview

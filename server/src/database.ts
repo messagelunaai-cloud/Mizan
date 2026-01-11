@@ -15,6 +15,15 @@ async function exec(sql: string) {
   return client.execute(sql);
 }
 
+async function tryExec(sql: string) {
+  try {
+    await exec(sql);
+  } catch (err) {
+    // Best-effort migration; ignore if column/table already exists
+    console.warn('Migration skipped:', (err as Error).message);
+  }
+}
+
 export function getDB() {
   return client;
 }
@@ -34,6 +43,14 @@ export async function initDatabase() {
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `);
+
+  // Backfill new user columns for premium v2 + schema versioning
+  await tryExec('ALTER TABLE users ADD COLUMN clerk_id TEXT');
+  await tryExec('ALTER TABLE users ADD COLUMN premium_until DATETIME');
+  await tryExec('ALTER TABLE users ADD COLUMN pledge_accepted_at DATETIME');
+  await tryExec('ALTER TABLE users ADD COLUMN premium_started_at DATETIME');
+  await tryExec('ALTER TABLE users ADD COLUMN commitment_ends_at DATETIME');
+  await tryExec('ALTER TABLE users ADD COLUMN schema_version INTEGER DEFAULT 1');
 
   // Checkins table - stores daily accountability data
   await exec(`
@@ -74,6 +91,53 @@ export async function initDatabase() {
       settings TEXT NOT NULL,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+  `);
+
+  await tryExec('ALTER TABLE settings ADD COLUMN settings_json TEXT');
+  await tryExec('ALTER TABLE settings ADD COLUMN schema_version INTEGER DEFAULT 1');
+
+  // Daily entries for premium v2 strict mode
+  await exec(`
+    CREATE TABLE IF NOT EXISTS daily_entries (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      date TEXT NOT NULL,
+      payload_json TEXT NOT NULL,
+      sealed_at DATETIME,
+      locked_at DATETIME,
+      edit_window_minutes INTEGER DEFAULT 60,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+      UNIQUE(user_id, date)
+    )
+  `);
+
+  // Debts ledger
+  await exec(`
+    CREATE TABLE IF NOT EXISTS debts (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      date TEXT NOT NULL,
+      amount REAL NOT NULL,
+      reason TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+  `);
+
+  // Reports store content snapshots
+  await exec(`
+    CREATE TABLE IF NOT EXISTS reports (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      month TEXT NOT NULL,
+      content_json TEXT NOT NULL,
+      locked INTEGER DEFAULT 1,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+      UNIQUE(user_id, month)
     )
   `);
 

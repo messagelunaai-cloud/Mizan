@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle2, AlertCircle, Building2, Book, Dumbbell, Hammer, BookOpen, BarChart3, Target } from 'lucide-react';
+import { CheckCircle2, AlertCircle, Building2, Book, Dumbbell, Hammer, BookOpen, BarChart3, Target, Lock } from 'lucide-react';
 import { CategoryItem, SubCheckbox } from '@/components/CategoryItem';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { ChecklistItem } from '@/components/ChecklistItem';
@@ -62,17 +62,11 @@ export default function CheckIn() {
     <div className="min-h-screen bg-[#050506] px-6 py-12 md:py-20">
       <div className="max-w-3xl mx-auto">
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.6 }} className="mb-10 flex items-center justify-end">
-          <motion.div 
-            className="flex items-center gap-3 text-[#4a4a4d] text-xs tracking-[0.18em] uppercase"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.2 }}
-          >
+          <div className="flex items-center gap-3 text-[#4a4a4d] text-xs tracking-[0.18em] uppercase">
             <CheckCircle2 className="w-4 h-4 text-[#2d4a3a]" />
-            <motion.span key={`${salahComplete}-${otherCategoriesCompleted}`} initial={{ y: -5 }} animate={{ y: 0 }}>
-              Salah {salahComplete ? '✓' : `(${salahLateCount} late)`} + {otherCategoriesCompleted}/2 categories
-            </motion.span>
-          </motion.div>
+            <span>Salah {salahComplete ? '✓' : `(${salahLateCount} late)`} + {otherCategoriesCompleted}/2 categories</span>
+            {submitted && <Lock className="w-4 h-4 text-[#6a6a6d]" title="Ledger sealed" />}
+          </div>
         </motion.div>
 
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.1 }} className="mb-10 p-6 border border-[#141417] bg-gradient-to-br from-[#0b0c0e] to-[#0a0d0b]">
