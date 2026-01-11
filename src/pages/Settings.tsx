@@ -58,42 +58,46 @@ export default function Settings() {
   const { isPremium, saveStrictness, refetch } = useMizanSession();
 
   useEffect(() => {
-    // Check notification status
-    setNotificationsEnabledState(getNotificationsEnabled());
-    setNotificationPermission(checkNotificationPermission());
-    
-    // Load notification preferences
-    const savedTimes = localStorage.getItem('mizan_notification_times');
-    const savedDailyCheckin = localStorage.getItem('mizan_notify_daily_checkin');
-    const savedCycleEnd = localStorage.getItem('mizan_notify_cycle_end');
-    const savedRemindersPerDay = localStorage.getItem('mizan_reminders_per_day');
-    
-    if (savedTimes) setNotificationTimes(JSON.parse(savedTimes));
-    if (savedDailyCheckin !== null) setNotifyDailyCheckin(savedDailyCheckin === 'true');
-    if (savedCycleEnd !== null) setNotifyCycleEnd(savedCycleEnd === 'true');
-    if (savedRemindersPerDay) setRemindersPerDay(parseInt(savedRemindersPerDay));
-    // Load settings (theme, focus, feature flags)
-    const s = readSettings();
-    const nextTheme = s.theme || 'dark';
-    setTheme(nextTheme);
-    applyTheme(nextTheme);
-    setFocusPhrase(s.focusPhrase || 'Consistency is earned.');
-    setCustomCategories((s.customCategories || []).join(', '));
-    setFeatureFlags({
-      prioritySupport: s.featureFlags?.prioritySupport ?? false,
-      earlyAccess: s.featureFlags?.earlyAccess ?? false,
-      supportChannel: s.featureFlags?.supportChannel || 'discord'
-    });
-    if (typeof (s as any).strictnessLevel === 'number') {
-      setStrictnessLevel(Math.max(1, Math.min(5, (s as any).strictnessLevel)));
-    }
-    // Fetch current user info including access code
-    if (user) {
-      getUserInfo()
-        .then(info => {
-          setCurrentAccessCode(info.accessCode || null);
-        })
-        .catch(console.error);
+    try {
+      // Check notification status
+      setNotificationsEnabledState(getNotificationsEnabled());
+      setNotificationPermission(checkNotificationPermission());
+      
+      // Load notification preferences
+      const savedTimes = localStorage.getItem('mizan_notification_times');
+      const savedDailyCheckin = localStorage.getItem('mizan_notify_daily_checkin');
+      const savedCycleEnd = localStorage.getItem('mizan_notify_cycle_end');
+      const savedRemindersPerDay = localStorage.getItem('mizan_reminders_per_day');
+      
+      if (savedTimes) setNotificationTimes(JSON.parse(savedTimes));
+      if (savedDailyCheckin !== null) setNotifyDailyCheckin(savedDailyCheckin === 'true');
+      if (savedCycleEnd !== null) setNotifyCycleEnd(savedCycleEnd === 'true');
+      if (savedRemindersPerDay) setRemindersPerDay(parseInt(savedRemindersPerDay));
+      // Load settings (theme, focus, feature flags)
+      const s = readSettings();
+      const nextTheme = s.theme || 'dark';
+      setTheme(nextTheme);
+      applyTheme(nextTheme);
+      setFocusPhrase(s.focusPhrase || 'Consistency is earned.');
+      setCustomCategories((s.customCategories || []).join(', '));
+      setFeatureFlags({
+        prioritySupport: s.featureFlags?.prioritySupport ?? false,
+        earlyAccess: s.featureFlags?.earlyAccess ?? false,
+        supportChannel: s.featureFlags?.supportChannel || 'discord'
+      });
+      if (typeof (s as any).strictnessLevel === 'number') {
+        setStrictnessLevel(Math.max(1, Math.min(5, (s as any).strictnessLevel)));
+      }
+      // Fetch current user info including access code
+      if (user) {
+        getUserInfo()
+          .then(info => {
+            setCurrentAccessCode(info.accessCode || null);
+          })
+          .catch(console.error);
+      }
+    } catch (err) {
+      console.error('[Settings] Error in useEffect:', err);
     }
   }, [user]);
 
