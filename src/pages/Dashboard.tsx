@@ -33,6 +33,7 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const { user } = useClerkAuth();
   const { cyclesCompleted, currentProgress } = useCycle();
+  const [pendingBannerVisible, setPendingBannerVisible] = useState(false);
   const [showPremiumActivated, setShowPremiumActivated] = useState(false);
   const [isActivating, setIsActivating] = useState(false);
   const [activationCode, setActivationCode] = useState<string | null>(null);
@@ -42,13 +43,20 @@ export default function Dashboard() {
   useEffect(() => {
     if (checkStripeRedirect()) {
       sessionStorage.setItem('stripe_redirect_pending', 'true');
+      setPendingBannerVisible(true);
     }
   }, []);
+
+  // Sync banner with stored pending flag
+  useEffect(() => {
+    setPendingBannerVisible(isPremiumPending(user?.id));
+  }, [user?.id]);
 
   // Handle Stripe redirect once user is available
   useEffect(() => {
     if (user?.id && sessionStorage.getItem('stripe_redirect_pending') === 'true') {
       handleStripeRedirect(user.id);
+      setPendingBannerVisible(true);
       sessionStorage.removeItem('stripe_redirect_pending');
     }
   }, [user?.id]);
@@ -67,6 +75,7 @@ export default function Dashboard() {
     await new Promise(resolve => setTimeout(resolve, 800));
 
     const code = activatePremium(user?.id);
+    setPendingBannerVisible(false);
     setActivationCode(code);
     setShowPremiumActivated(true);
     setIsActivating(false);
@@ -143,7 +152,7 @@ export default function Dashboard() {
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="max-w-2xl mx-auto">
 
         {/* Premium Pending Banner */}
-        {isPremiumPending(user?.id) && (
+        {(pendingBannerVisible || isPremiumPending(user?.id)) && (
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
